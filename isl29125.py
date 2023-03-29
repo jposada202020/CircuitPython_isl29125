@@ -51,6 +51,10 @@ GREEN_BLUE = const(0b111)
 LUX_375 = const(0b0)
 LUX_10K = const(0b1)
 
+# ADC Resolution
+RES_16BITS = const(0b0)
+RES_12BITS = const(0b1)
+
 
 class ISL29125:
     """Driver for the ISL29125 Light Sensor connected over I2C.
@@ -98,6 +102,7 @@ class ISL29125:
 
     _operation_mode = RWBits(3, _CONFIG1, 0)
     _rgb_sensing_range = RWBits(1, _CONFIG1, 3)
+    _adc_resolution = RWBits(1, _CONFIG1, 3)
 
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -206,7 +211,7 @@ class ISL29125:
             isl = isl29125.ISL29125(i2c)
 
 
-            isl.operation_mode = isl29125.BLUE_ONLY
+            isl.operation_mode = isl29125.LUX_375
 
 
         """
@@ -217,3 +222,42 @@ class ISL29125:
     def sensing_range(self, value: int) -> NoReturn:
 
         self._rgb_sensing_range = value
+
+    @property
+    def adc_resolution(self) -> int:
+        """ADC’s resolution and the number of clock cycles per conversion is
+        determined by this bit. Changing the resolution of the ADC, changes the
+        number of clock cycles of the ADC which in turn changes the integration time.
+        Integration time is the period the ADC samples the photodiode current signal
+        for a measurement
+
+
+        +----------------------------------------+----------------------------------+
+        | Mode                                   | Value                            |
+        +========================================+==================================+
+        | :py:const:`isl29125.RES_12BITS`        | :py:const:`0b0` 16 bits          |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`isl29125.RES_16BITS`        | :py:const:`0b1` 12 bits          |
+        +----------------------------------------+----------------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl.operation_mode = isl29125.RES_12BITS
+
+
+        """
+
+        return self._adc_resolution
+
+    @adc_resolution.setter
+    def adc_resolution(self, value: int) -> NoReturn:
+
+        self._adc_resolution = value

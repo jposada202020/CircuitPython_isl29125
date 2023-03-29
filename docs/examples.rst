@@ -24,3 +24,12 @@ Example showing how to change the sensor RGB sensing range
 .. literalinclude:: ../examples/isl29125_rgb_sensing_range.py
     :caption: examples/isl29125_rgb_sensing_range.py
     :linenos:
+
+ADC Resolution
+------------------
+
+Example showing how to change the sensor ADC Resolution
+
+.. literalinclude:: ../examples/isl29125_rgb_sensing_range.py
+    :caption: examples/isl29125_rgb_sensing_range.py
+    :linenos:
