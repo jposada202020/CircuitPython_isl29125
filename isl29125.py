@@ -25,7 +25,6 @@ from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
 
 try:
     from busio import I2C
-    from typing_extensions import NoReturn
 except ImportError:
     pass
 

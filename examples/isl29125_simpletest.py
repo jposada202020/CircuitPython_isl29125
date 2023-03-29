@@ -4,7 +4,7 @@
 
 import time
 import board
-import isl29125 as isl29125
+import isl29125
 
 
 i2c = board.I2C()  # uses board.SCL and board.SDA
