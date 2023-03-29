@@ -22,9 +22,11 @@ Implementation Notes
 from micropython import const
 from adafruit_bus_device import i2c_device
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
+from adafruit_register.i2c_bits import RWBits
 
 try:
     from busio import I2C
+    from typing_extensions import NoReturn
 except ImportError:
     pass
 
@@ -33,7 +35,17 @@ __repo__ = "https://github.com/jposada202020/CircuitPython_isl29125.git"
 
 _I2C_ADDR = const(0x44)
 _REG_WHOAMI = const(0x00)
-_CONFIG_1 = const(0x01)
+_CONFIG1 = const(0x01)
+
+# Operation Modes
+POWERDOWN = const(0b000)
+GREEN_ONLY = const(0b001)
+RED_ONLY = const(0b010)
+BLUE_ONLY = const(0b11)
+STANDBY = const(0b100)  # No ADC Conversion
+RED_GREEN_BLUE = const(0b101)
+GREEN_RED = const(0b110)
+GREEN_BLUE = const(0b111)
 
 
 class ISL29125:
@@ -71,7 +83,7 @@ class ISL29125:
     """
 
     _device_id = ROUnaryStruct(_REG_WHOAMI, "B")
-    _device_config = UnaryStruct(_CONFIG_1, "B")
+    _conf_reg = UnaryStruct(_CONFIG1, "B")
 
     _g_LSB = ROUnaryStruct(0x09, "B")
     _g_MSB = ROUnaryStruct(0x0A, "B")
@@ -80,13 +92,15 @@ class ISL29125:
     _b_LSB = ROUnaryStruct(0x0D, "B")
     _b_MSB = ROUnaryStruct(0x0E, "B")
 
+    _operation_mode = RWBits(3, _CONFIG1, 0)
+
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
         if self._device_id != 0x7D:
             raise RuntimeError("Failed to find ISL29125")
 
-        self._device_config = 0x0D
+        self._conf_reg = 0x0D
 
     @property
     def green(self):
@@ -111,3 +125,52 @@ class ISL29125:
         """colors property"""
 
         return self.red, self.green, self.blue
+
+    @property
+    def operation_mode(self) -> int:
+        """The device has various RGB operating modes. The device powers up on
+        a disable mode. All operating modes are in continuous ADC
+        conversion. The following bits are used to enable the operating mode
+
+
+        +----------------------------------------+-------------------------+
+        | Mode                                   | Value                   |
+        +========================================+=========================+
+        | :py:const:`isl29125.POWERDOWN`         | :py:const:`0b000`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.GREEN_ONLY`        | :py:const:`0b001`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.RED_ONLY`          | :py:const:`0b010`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.BLUE_ONLY`         | :py:const:`0b011`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.STANDBY`           | :py:const:`0b100`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.RED_GREEN_BLUE`    | :py:const:`0b101`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.GREEN_RED`         | :py:const:`0b110`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.GREEN_BLUE`        | :py:const:`0b111`       |
+        +----------------------------------------+-------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl.operation_mode = isl29125.BLUE_ONLY
+
+
+        """
+
+        return self._operation_mode
+
+    @operation_mode.setter
+    def operation_mode(self, value: int) -> NoReturn:
+
+        self._operation_mode = value
