@@ -47,6 +47,10 @@ RED_GREEN_BLUE = const(0b101)
 GREEN_RED = const(0b110)
 GREEN_BLUE = const(0b111)
 
+# Sensing Range
+LUX_375 = const(0b0)
+LUX_10K = const(0b1)
+
 
 class ISL29125:
     """Driver for the ISL29125 Light Sensor connected over I2C.
@@ -93,6 +97,7 @@ class ISL29125:
     _b_MSB = ROUnaryStruct(0x0E, "B")
 
     _operation_mode = RWBits(3, _CONFIG1, 0)
+    _rgb_sensing_range = RWBits(1, _CONFIG1, 3)
 
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -174,3 +179,41 @@ class ISL29125:
     def operation_mode(self, value: int) -> NoReturn:
 
         self._operation_mode = value
+
+    @property
+    def sensing_range(self) -> int:
+        """The Full Scale RGB Range has two different selectable ranges at bit 3.
+         The range determines the ADC resolution (12 bits and 16 bits).
+         Each range has a maximum allowable lux value. Higher range values offer
+         better resolution and wider lux value
+
+
+        +----------------------------------------+----------------------------------+
+        | Mode                                   | Value                            |
+        +========================================+==================================+
+        | :py:const:`isl29125.LUX_375`           | :py:const:`0b0` 375 lux          |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`isl29125.LUX_10K`           | :py:const:`0b1` 10000 lux        |
+        +----------------------------------------+----------------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl.operation_mode = isl29125.BLUE_ONLY
+
+
+        """
+
+        return self._rgb_sensing_range
+
+    @sensing_range.setter
+    def sensing_range(self, value: int) -> NoReturn:
+
+        self._rgb_sensing_range = value

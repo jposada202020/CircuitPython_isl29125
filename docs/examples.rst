@@ -15,3 +15,12 @@ Example showing how to change the sensor operation mode
 .. literalinclude:: ../examples/isl29125_operation_mode.py
     :caption: examples/isl29125_operation_mode.py
     :linenos:
+
+RGB Sensing Range
+------------------
+
+Example showing how to change the sensor RGB sensing range
+
+.. literalinclude:: ../examples/isl29125_rgb_sensing_range.py
+    :caption: examples/isl29125_rgb_sensing_range.py
+    :linenos:
