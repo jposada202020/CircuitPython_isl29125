@@ -22,12 +22,11 @@ Implementation Notes
 from micropython import const
 from adafruit_bus_device import i2c_device
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
-from adafruit_register.i2c_bits import RWBits, ROBits
+from adafruit_register.i2c_bits import RWBits
 
 try:
     from busio import I2C
     from typing_extensions import NoReturn
-    from typing import Tuple
 except ImportError:
     pass
 
@@ -124,9 +123,9 @@ class ISL29125:
     _adc_resolution = RWBits(1, _CONFIG1, 3)
     _ir_compensation = RWBits(1, _CONFIG2, 7)
     _ir_compensation_value = RWBits(6, _CONFIG2, 0)
-    _interrupt_threshold_status = ROBits(2, _CONFIG3, 0)
+    _interrupt_threshold_status = RWBits(2, _CONFIG3, 0)
     _interrupt_persistent_control = RWBits(2, _CONFIG3, 2)
-    _interrupt_triggered_status = ROBits(1, _FLAG_REGISTER, 0)
+    _interrupt_triggered_status = RWBits(1, _FLAG_REGISTER, 0)
     _brown_out = RWBits(1, _FLAG_REGISTER, 2)
 
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
@@ -139,6 +138,7 @@ class ISL29125:
         # 0xBF Datasheet recommendation to max out IR compensation value.
         # It makes High range reach more than 10,000lux.
         self._conf_reg2 = 0xBF
+        self.clear_register_flag()
         # Setting the brownout to 0 according to datasheet recommendation
         self._brown_out = 0
 
@@ -399,7 +399,7 @@ class ISL29125:
         return self._interrupt_threshold_status
 
     @property
-    def high_threshold(self):
+    def high_threshold(self) -> int:
         """
         The interrupt threshold level is a 16-bit number (Low Threshold-1 and Low Threshold-2).
         The lower interrupt threshold registers are used to set the lower trigger point for
@@ -408,21 +408,22 @@ class ISL29125:
         status bit (HIGH).
 
         """
-        return self._high_threshold_LSB, self._high_threshold_MSB
+
+        return self._high_threshold_MSB * 256 + self._high_threshold_LSB
 
     @high_threshold.setter
-    def high_threshold(self, value: Tuple[int, int]):
-        self._high_threshold_LSB = value[0]
-        self._high_threshold_MSB = value[1]
+    def high_threshold(self, value: int) -> NoReturn:
+        self._high_threshold_LSB = value & 0xFF
+        self._high_threshold_MSB = value >> 8
 
     @property
-    def low_threshold(self):
-        return self._low_threshold_LSB, self._low_threshold_MSB
+    def low_threshold(self) -> int:
+        return self._low_threshold_MSB * 256 + self._low_threshold_LSB
 
     @low_threshold.setter
-    def low_threshold(self, value: Tuple[int, int]):
-        self._low_threshold_LSB = value[0]
-        self._low_threshold_MSB = value[1]
+    def low_threshold(self, value: int) -> NoReturn:
+        self._low_threshold_LSB = value & 0xFF
+        self._low_threshold_MSB = value >> 8
 
     @property
     def interrupt_triggered(self) -> int:
@@ -458,7 +459,7 @@ class ISL29125:
     @property
     def persistent_control(self) -> int:
         """To minimize interrupt events due to 'transient' conditions, an
-        interrupt persistency option is available. IN the event of transient
+        interrupt persistence option is available. IN the event of transient
         condition an 'X-consecutive' number of interrupt must happen before
         the interrupt flag and pint (INT) pin gets driven low. The interrupt
         is active-low and remains asserted until clear_register_flag is called

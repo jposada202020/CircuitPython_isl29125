@@ -33,3 +33,12 @@ Example showing how to change the sensor ADC Resolution
 .. literalinclude:: ../examples/isl29125_rgb_sensing_range.py
     :caption: examples/isl29125_rgb_sensing_range.py
     :linenos:
+
+Threshold Example
+------------------
+
+Example showing the threshold window setting
+
+.. literalinclude:: ../examples/isl29125_threshold.py
+    :caption: examples/isl29125_threshold.py
+    :linenos:
