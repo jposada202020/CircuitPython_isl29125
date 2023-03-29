@@ -36,6 +36,7 @@ __repo__ = "https://github.com/jposada202020/CircuitPython_isl29125.git"
 _I2C_ADDR = const(0x44)
 _REG_WHOAMI = const(0x00)
 _CONFIG1 = const(0x01)
+_CONFIG2 = const(0x02)
 
 # Operation Modes
 POWERDOWN = const(0b000)
@@ -92,6 +93,7 @@ class ISL29125:
 
     _device_id = ROUnaryStruct(_REG_WHOAMI, "B")
     _conf_reg = UnaryStruct(_CONFIG1, "B")
+    _conf_reg2 = UnaryStruct(_CONFIG2, "B")
 
     _g_LSB = ROUnaryStruct(0x09, "B")
     _g_MSB = ROUnaryStruct(0x0A, "B")
@@ -103,6 +105,8 @@ class ISL29125:
     _operation_mode = RWBits(3, _CONFIG1, 0)
     _rgb_sensing_range = RWBits(1, _CONFIG1, 3)
     _adc_resolution = RWBits(1, _CONFIG1, 3)
+    _ir_compensation = RWBits(1, _CONFIG2, 7)
+    _ir_compensation_value = RWBits(6, _CONFIG2, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -111,6 +115,9 @@ class ISL29125:
             raise RuntimeError("Failed to find ISL29125")
 
         self._conf_reg = 0x0D
+        # 0xBF Datasheet recommendation to max out IR compensation value.
+        # It makes High range reach more than 10,000lux.
+        self._conf_reg2 = 0xBF
 
     @property
     def green(self):
@@ -261,3 +268,75 @@ class ISL29125:
     def adc_resolution(self, value: int) -> NoReturn:
 
         self._adc_resolution = value
+
+    @property
+    def ir_compensation(self) -> int:
+        """The device provides a programmable active IR compensation which allows fine-tuning
+         of residual infrared components from the output which allows optimizing the measurement
+          variation between differing IR-content light sources.
+
+        +----------------------------------------+----------------------------------+
+        | Mode                                   | Value                            |
+        +========================================+==================================+
+        | :py:const:`isl29125.IR_ON`             | :py:const:`0b1`                  |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`isl29125.IR_OFF`            | :py:const:`0b0`                  |
+        +----------------------------------------+----------------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl.ir_compensation = isl29125.IR_ON
+
+
+        """
+
+        return self._ir_compensation
+
+    @ir_compensation.setter
+    def ir_compensation(self, value: int) -> NoReturn:
+
+        self._ir_compensation = value
+
+    @property
+    def ir_compensation_value(self) -> int:
+        """The effective IR compensation is from 106 to 169 in the CONF2 register.
+        Consult datasheet for detailed IR filtering calibration
+
+        with the following values:
+
+        * BIT5: 32
+        * BIT4: 16
+        * BIT3: 8
+        * BIT2: 4
+        * BIT1: 2
+        * BIT0: 1
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl._ir_compensation_value = 48
+
+
+        """
+
+        return self._ir_compensation_value
+
+    @ir_compensation_value.setter
+    def ir_compensation_value(self, value: int) -> NoReturn:
+
+        self._ir_compensation_value = value
