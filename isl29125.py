@@ -22,11 +22,12 @@ Implementation Notes
 from micropython import const
 from adafruit_bus_device import i2c_device
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
-from adafruit_register.i2c_bits import RWBits
+from adafruit_register.i2c_bits import RWBits, ROBits
 
 try:
     from busio import I2C
     from typing_extensions import NoReturn
+    from typing import Tuple
 except ImportError:
     pass
 
@@ -37,6 +38,8 @@ _I2C_ADDR = const(0x44)
 _REG_WHOAMI = const(0x00)
 _CONFIG1 = const(0x01)
 _CONFIG2 = const(0x02)
+_CONFIG3 = const(0x03)
+_FLAG_REGISTER = const(0x08)
 
 # Operation Modes
 POWERDOWN = const(0b000)
@@ -55,6 +58,14 @@ LUX_10K = const(0b1)
 # ADC Resolution
 RES_16BITS = const(0b0)
 RES_12BITS = const(0b1)
+
+# Persistent Control
+IC1 = const(0b00)
+IC2 = const(0b01)
+IC4 = const(0b10)
+IC8 = const(0b11)
+
+# pylint: disable= invalid-name, too-many-instance-attributes, missing-function-docstring
 
 
 class ISL29125:
@@ -94,6 +105,12 @@ class ISL29125:
     _device_id = ROUnaryStruct(_REG_WHOAMI, "B")
     _conf_reg = UnaryStruct(_CONFIG1, "B")
     _conf_reg2 = UnaryStruct(_CONFIG2, "B")
+    _conf_reg3 = UnaryStruct(_CONFIG3, "B")
+    _low_threshold_LSB = UnaryStruct(0x04, "B")
+    _low_threshold_MSB = UnaryStruct(0x05, "B")
+    _high_threshold_LSB = UnaryStruct(0x06, "B")
+    _high_threshold_MSB = UnaryStruct(0x07, "B")
+    _flag_register = UnaryStruct(0x08, "B")
 
     _g_LSB = ROUnaryStruct(0x09, "B")
     _g_MSB = ROUnaryStruct(0x0A, "B")
@@ -107,6 +124,10 @@ class ISL29125:
     _adc_resolution = RWBits(1, _CONFIG1, 3)
     _ir_compensation = RWBits(1, _CONFIG2, 7)
     _ir_compensation_value = RWBits(6, _CONFIG2, 0)
+    _interrupt_threshold_status = ROBits(2, _CONFIG3, 0)
+    _interrupt_persistent_control = RWBits(2, _CONFIG3, 2)
+    _interrupt_triggered_status = ROBits(1, _FLAG_REGISTER, 0)
+    _brown_out = RWBits(1, _FLAG_REGISTER, 2)
 
     def __init__(self, i2c_bus: I2C, address: int = _I2C_ADDR) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
@@ -118,6 +139,8 @@ class ISL29125:
         # 0xBF Datasheet recommendation to max out IR compensation value.
         # It makes High range reach more than 10,000lux.
         self._conf_reg2 = 0xBF
+        # Setting the brownout to 0 according to datasheet recommendation
+        self._brown_out = 0
 
     @property
     def green(self):
@@ -340,3 +363,142 @@ class ISL29125:
     def ir_compensation_value(self, value: int) -> NoReturn:
 
         self._ir_compensation_value = value
+
+    @property
+    def interrupt_threshold(self) -> int:
+        """The interrupt_threshold is the status bit for light intensity detection.
+        The threshold is set to logic HIGH when the light intensity
+        crosses the interrupt thresholds window (register address 0x04 - 0x07)
+
+        +----------------------------------------+----------------------------------+
+        | Value                                  | Value                            |
+        +========================================+==================================+
+        | :py:const:`0b00`                       | No Interrupt                     |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`0b01`                       | GREEN Interrupt                  |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`0b10`                       | RED Interrupt                    |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`0b11`                       | BLUE Interrupt                   |
+        +----------------------------------------+----------------------------------+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            print(isl.interrupt_threshold)
+
+
+        """
+
+        return self._interrupt_threshold_status
+
+    @property
+    def high_threshold(self):
+        """
+        The interrupt threshold level is a 16-bit number (Low Threshold-1 and Low Threshold-2).
+        The lower interrupt threshold registers are used to set the lower trigger point for
+        interrupt generation. If the ALS value crosses below or is equal to the lower
+        threshold, an interrupt is asserted on the interrupt pin (LOW) and the interrupt
+        status bit (HIGH).
+
+        """
+        return self._high_threshold_LSB, self._high_threshold_MSB
+
+    @high_threshold.setter
+    def high_threshold(self, value: Tuple[int, int]):
+        self._high_threshold_LSB = value[0]
+        self._high_threshold_MSB = value[1]
+
+    @property
+    def low_threshold(self):
+        return self._low_threshold_LSB, self._low_threshold_MSB
+
+    @low_threshold.setter
+    def low_threshold(self, value: Tuple[int, int]):
+        self._low_threshold_LSB = value[0]
+        self._low_threshold_MSB = value[1]
+
+    @property
+    def interrupt_triggered(self) -> int:
+        """Is set to high when the interrupt thresholds have been triggered (out of
+        threshold window) and logic low when not yet triggered.
+
+        +----------------------------------------+----------------------------------+
+        | Value                                  | Value                            |
+        +========================================+==================================+
+        | :py:const:`0b0`                        | Interrupt is cleared or          |
+        |                                        | not triggered yet                |
+        +----------------------------------------+----------------------------------+
+        | :py:const:`0b1`                        | interrupt is triggered           |
+        +----------------------------------------+----------------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            print(isl.interrupt_triggered)
+
+
+        """
+
+        return self._interrupt_triggered_status
+
+    @property
+    def persistent_control(self) -> int:
+        """To minimize interrupt events due to 'transient' conditions, an
+        interrupt persistency option is available. IN the event of transient
+        condition an 'X-consecutive' number of interrupt must happen before
+        the interrupt flag and pint (INT) pin gets driven low. The interrupt
+        is active-low and remains asserted until clear_register_flag is called
+
+
+        +----------------------------------------+-------------------------+
+        | Mode                                   | Value                   |
+        +========================================+=========================+
+        | :py:const:`isl29125.IC1`               | :py:const:`0b000`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.IC2`               | :py:const:`0b001`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.IC4`               | :py:const:`0b010`       |
+        +----------------------------------------+-------------------------+
+        | :py:const:`isl29125.IC8`               | :py:const:`0b011`       |
+        +----------------------------------------+-------------------------+
+
+
+        Example
+        ---------------------
+
+        .. code-block:: python
+
+            i2c = board.I2C()
+            isl = isl29125.ISL29125(i2c)
+
+
+            isl.persistant_control = isl29125.IC4
+
+
+        """
+
+        return self._interrupt_persistent_control
+
+    @persistent_control.setter
+    def persistent_control(self, value: int) -> NoReturn:
+
+        self._interrupt_persistent_control = value
+
+    def clear_register_flag(self):
+        """Clears the flag register performing a read action"""
+
+        return self._flag_register
