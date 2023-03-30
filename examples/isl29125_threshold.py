@@ -33,4 +33,3 @@ while True:
     print("Blue Luminance:", blue)
 
     time.sleep(1.5)
-
