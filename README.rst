@@ -17,9 +17,6 @@ Introduction
     :alt: Code Style: Black
 
 Driver for the isl29125 light sensor.
-Disclaimer: For some reason, the int pin does in my Sparkfun Sensor does not work as intended
-So the threshold logic, although works setting the values could, needs to be re-tested. Good Luck
-
 
 Dependencies
 =============

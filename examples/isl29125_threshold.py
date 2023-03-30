@@ -17,18 +17,20 @@ isl = isl29125.ISL29125(i2c)
 
 print("Current High Threshold: ", isl.high_threshold)
 print("Current Low Threshold: ", isl.low_threshold)
-print("Setting up High Threshold to 450 Lux and Low to 10 Lux")
-isl.high_threshold = 450
-isl.low_threshold = 10
+isl.interrupt_threshold = isl29125.BLUE_INTERRUPT
+print("Setting up Blue Threshold window to 100-300 Lux")
+isl.high_threshold = 300
+isl.low_threshold = 100
 print("Current High Threshold: ", isl.high_threshold)
 print("Current Low Threshold: ", isl.low_threshold)
-isl.clear_register_flag()
+
 while True:
     print("INT Pin Value:", switch_pin.value)
-
+    isl.clear_register_flag()
     red, green, blue = isl.colors
     print("Red Luminance: ", red)
     print("Green Luminance: ", green)
     print("Blue Luminance:", blue)
 
-    time.sleep(0.5)
+    time.sleep(1.5)
+

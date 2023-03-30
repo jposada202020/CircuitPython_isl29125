@@ -58,6 +58,12 @@ LUX_10K = const(0b1)
 RES_16BITS = const(0b0)
 RES_12BITS = const(0b1)
 
+# Interrupt
+NO_INTERRUPT = const(0b00)
+GREEN_INTERRUPT = const(0b01)
+RED_INTERRUPT = const(0b10)
+BLUE_INTERRUPT = const(0b11)
+
 # Persistent Control
 IC1 = const(0b00)
 IC2 = const(0b01)
@@ -366,20 +372,20 @@ class ISL29125:
 
     @property
     def interrupt_threshold(self) -> int:
-        """The interrupt_threshold is the status bit for light intensity detection.
-        The threshold is set to logic HIGH when the light intensity
+        """The interrupt_threshold is the status bits for light intensity detection.
+        The property:`interrupt_triggered` is set to logic HIGH when the light intensity
         crosses the interrupt thresholds window (register address 0x04 - 0x07)
 
         +----------------------------------------+----------------------------------+
         | Value                                  | Value                            |
         +========================================+==================================+
-        | :py:const:`0b00`                       | No Interrupt                     |
+        | :py:const:`isl29125.NO_INTERRUPT`      | :py:const:`0b00`                 |
         +----------------------------------------+----------------------------------+
-        | :py:const:`0b01`                       | GREEN Interrupt                  |
+        | :py:const:`isl29125.GREEN_INTERRUPT`   | :py:const:`0b01`                 |
         +----------------------------------------+----------------------------------+
-        | :py:const:`0b10`                       | RED Interrupt                    |
+        | ::py:const:`isl29125.RED_INTERRUPT`    | :py:const:`0b10`                 |
         +----------------------------------------+----------------------------------+
-        | :py:const:`0b11`                       | BLUE Interrupt                   |
+        | :py:const:`isl29125.BLUE_INTERRUPT`    | :py:const:`0b11`                 |
         +----------------------------------------+----------------------------------+
 
         Example
@@ -391,12 +397,16 @@ class ISL29125:
             isl = isl29125.ISL29125(i2c)
 
 
-            print(isl.interrupt_threshold)
+            isl.interrupt_threshold = isl29125.BLUE_INTERRUPT
 
 
         """
 
         return self._interrupt_threshold_status
+
+    @interrupt_threshold.setter
+    def interrupt_threshold(self, value) -> NoReturn:
+        self._interrupt_threshold_status = value
 
     @property
     def high_threshold(self) -> int:
@@ -487,7 +497,7 @@ class ISL29125:
             isl = isl29125.ISL29125(i2c)
 
 
-            isl.persistant_control = isl29125.IC4
+            isl.persistent_control = isl29125.IC4
 
 
         """
