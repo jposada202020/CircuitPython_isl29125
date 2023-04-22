@@ -26,7 +26,6 @@ from adafruit_register.i2c_bits import RWBits
 
 try:
     from busio import I2C
-    from typing_extensions import NoReturn
 except ImportError:
     pass
 
@@ -86,23 +85,23 @@ class ISL29125:
     Here is an example of using the :class:`ISL29125` class.
     First you will need to import the libraries to use the sensor
 
-        .. code-block:: python
+    .. code-block:: python
 
-            import board
-            import circuitpython_isl29125.isl29125 as isl29125
+        import board
+        import circuitpython_isl29125.isl29125 as isl29125
 
     Once this is done you can define your `board.I2C` object and define your sensor object
 
-        .. code-block:: python
+    .. code-block:: python
 
-            i2c = board.I2C()  # uses board.SCL and board.SDA
-            isl = isl29125.ISL29125(i2c)
+        i2c = board.I2C()  # uses board.SCL and board.SDA
+        isl = isl29125.ISL29125(i2c)
 
     Now you have access to the :attr:`colors` attribute
 
-        .. code-block:: python
+    .. code-block:: python
 
-            red, green, blue = isl.colors
+        red, green, blue = isl.colors
 
 
     """
@@ -217,7 +216,7 @@ class ISL29125:
         return self._operation_mode
 
     @operation_mode.setter
-    def operation_mode(self, value: int) -> NoReturn:
+    def operation_mode(self, value: int) -> None:
 
         self._operation_mode = value
 
@@ -255,7 +254,7 @@ class ISL29125:
         return self._rgb_sensing_range
 
     @sensing_range.setter
-    def sensing_range(self, value: int) -> NoReturn:
+    def sensing_range(self, value: int) -> None:
 
         self._rgb_sensing_range = value
 
@@ -294,7 +293,7 @@ class ISL29125:
         return self._adc_resolution
 
     @adc_resolution.setter
-    def adc_resolution(self, value: int) -> NoReturn:
+    def adc_resolution(self, value: int) -> None:
 
         self._adc_resolution = value
 
@@ -330,7 +329,7 @@ class ISL29125:
         return self._ir_compensation
 
     @ir_compensation.setter
-    def ir_compensation(self, value: int) -> NoReturn:
+    def ir_compensation(self, value: int) -> None:
 
         self._ir_compensation = value
 
@@ -366,7 +365,7 @@ class ISL29125:
         return self._ir_compensation_value
 
     @ir_compensation_value.setter
-    def ir_compensation_value(self, value: int) -> NoReturn:
+    def ir_compensation_value(self, value: int) -> None:
 
         self._ir_compensation_value = value
 
@@ -405,7 +404,7 @@ class ISL29125:
         return self._interrupt_threshold_status
 
     @interrupt_threshold.setter
-    def interrupt_threshold(self, value) -> NoReturn:
+    def interrupt_threshold(self, value) -> None:
         self._interrupt_threshold_status = value
 
     @property
@@ -422,7 +421,7 @@ class ISL29125:
         return self._high_threshold_MSB * 256 + self._high_threshold_LSB
 
     @high_threshold.setter
-    def high_threshold(self, value: int) -> NoReturn:
+    def high_threshold(self, value: int) -> None:
         self._high_threshold_LSB = value & 0xFF
         self._high_threshold_MSB = value >> 8
 
@@ -431,7 +430,7 @@ class ISL29125:
         return self._low_threshold_MSB * 256 + self._low_threshold_LSB
 
     @low_threshold.setter
-    def low_threshold(self, value: int) -> NoReturn:
+    def low_threshold(self, value: int) -> None:
         self._low_threshold_LSB = value & 0xFF
         self._low_threshold_MSB = value >> 8
 
@@ -505,7 +504,7 @@ class ISL29125:
         return self._interrupt_persistent_control
 
     @persistent_control.setter
-    def persistent_control(self, value: int) -> NoReturn:
+    def persistent_control(self, value: int) -> None:
 
         self._interrupt_persistent_control = value
 

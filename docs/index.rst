@@ -27,11 +27,3 @@ Table of Contents
 
     Download from GitHub <https://github.com/jposada202020/CircuitPython_isl29125/releases/latest>
     Download Library Bundle <https://circuitpython.org/libraries>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
