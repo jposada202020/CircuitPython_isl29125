@@ -118,7 +118,7 @@ html_theme_options = {
         {
             "media": "(prefers-color-scheme: dark)",
             "scheme": "slate",
-            "primary": "green",
+            "primary": "purple",
             "accent": "light-blue",
             "toggle": {
                 "icon": "material/lightbulb",
