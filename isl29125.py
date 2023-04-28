@@ -48,10 +48,21 @@ STANDBY = const(0b100)  # No ADC Conversion
 RED_GREEN_BLUE = const(0b101)
 GREEN_RED = const(0b110)
 GREEN_BLUE = const(0b111)
+operation_values = (
+    POWERDOWN,
+    GREEN_ONLY,
+    RED_ONLY,
+    BLUE_ONLY,
+    STANDBY,
+    RED_GREEN_BLUE,
+    GREEN_RED,
+    GREEN_BLUE,
+)
 
 # Sensing Range
 LUX_375 = const(0b0)
 LUX_10K = const(0b1)
+sensing_range_values = (LUX_375, LUX_10K)
 
 # ADC Resolution
 RES_16BITS = const(0b0)
@@ -62,12 +73,14 @@ NO_INTERRUPT = const(0b00)
 GREEN_INTERRUPT = const(0b01)
 RED_INTERRUPT = const(0b10)
 BLUE_INTERRUPT = const(0b11)
+interrupt_values = (NO_INTERRUPT, GREEN_INTERRUPT, RED_INTERRUPT, BLUE_INTERRUPT)
 
 # Persistent Control
 IC1 = const(0b00)
 IC2 = const(0b01)
 IC4 = const(0b10)
 IC8 = const(0b11)
+persistent_control_values = (IC1, IC2, IC4, IC8)
 
 # pylint: disable= invalid-name, too-many-instance-attributes, missing-function-docstring
 
@@ -85,23 +98,23 @@ class ISL29125:
     Here is an example of using the :class:`ISL29125` class.
     First you will need to import the libraries to use the sensor
 
-    .. code-block:: python
+        .. code-block:: python
 
-        import board
-        import circuitpython_isl29125.isl29125 as isl29125
+            import board
+            import circuitpython_isl29125.isl29125 as isl29125
 
     Once this is done you can define your `board.I2C` object and define your sensor object
 
-    .. code-block:: python
+        .. code-block:: python
 
-        i2c = board.I2C()  # uses board.SCL and board.SDA
-        isl = isl29125.ISL29125(i2c)
+            i2c = board.I2C()  # uses board.SCL and board.SDA
+            isl = isl29125.ISL29125(i2c)
 
     Now you have access to the :attr:`colors` attribute
 
-    .. code-block:: python
+        .. code-block:: python
 
-        red, green, blue = isl.colors
+            red, green, blue = isl.colors
 
 
     """
@@ -110,18 +123,13 @@ class ISL29125:
     _conf_reg = UnaryStruct(_CONFIG1, "B")
     _conf_reg2 = UnaryStruct(_CONFIG2, "B")
     _conf_reg3 = UnaryStruct(_CONFIG3, "B")
-    _low_threshold_LSB = UnaryStruct(0x04, "B")
-    _low_threshold_MSB = UnaryStruct(0x05, "B")
-    _high_threshold_LSB = UnaryStruct(0x06, "B")
-    _high_threshold_MSB = UnaryStruct(0x07, "B")
+    _low_threshold = UnaryStruct(0x04, "h")
+    _high_threshold = UnaryStruct(0x06, "h")
     _flag_register = UnaryStruct(0x08, "B")
 
-    _g_LSB = ROUnaryStruct(0x09, "B")
-    _g_MSB = ROUnaryStruct(0x0A, "B")
-    _r_LSB = ROUnaryStruct(0x0B, "B")
-    _r_MSB = ROUnaryStruct(0x0C, "B")
-    _b_LSB = ROUnaryStruct(0x0D, "B")
-    _b_MSB = ROUnaryStruct(0x0E, "B")
+    _green = ROUnaryStruct(0x09, "h")
+    _red = ROUnaryStruct(0x0B, "h")
+    _blue = ROUnaryStruct(0x0D, "h")
 
     _operation_mode = RWBits(3, _CONFIG1, 0)
     _rgb_sensing_range = RWBits(1, _CONFIG1, 3)
@@ -137,7 +145,7 @@ class ISL29125:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
         if self._device_id != 0x7D:
-            raise RuntimeError("Failed to find ISL29125")
+            raise RuntimeError("Failed to find the ISL29125")
 
         self._conf_reg = 0x0D
         # 0xBF Datasheet recommendation to max out IR compensation value.
@@ -151,28 +159,28 @@ class ISL29125:
     def green(self):
         """Green property"""
 
-        return self._g_MSB * 256 + self._g_LSB
+        return self._green
 
     @property
     def red(self):
         """red property"""
 
-        return self._r_MSB * 256 + self._r_LSB
+        return self._red
 
     @property
     def blue(self):
         """blue property"""
 
-        return self._b_MSB * 256 + self._b_LSB
+        return self._blue
 
     @property
     def colors(self):
         """colors property"""
 
-        return self.red, self.green, self.blue
+        return self._red, self._green, self._blue
 
     @property
-    def operation_mode(self) -> int:
+    def operation_mode(self) -> str:
         """The device has various RGB operating modes. The device powers up on
         a disable mode. All operating modes are in continuous ADC
         conversion. The following bits are used to enable the operating mode
@@ -212,16 +220,27 @@ class ISL29125:
 
 
         """
+        values = (
+            "POWERDOWN",
+            "GREEN_ONLY",
+            "RED_ONLY",
+            "BLUE_ONLY",
+            "STANDBY",
+            "RED_GREEN_BLUE",
+            "GREEN_RED",
+            "GREEN_BLUE",
+        )
 
-        return self._operation_mode
+        return values[self._operation_mode]
 
     @operation_mode.setter
     def operation_mode(self, value: int) -> None:
-
+        if value not in operation_values:
+            raise ValueError("Value must be a valid operation mode setting")
         self._operation_mode = value
 
     @property
-    def sensing_range(self) -> int:
+    def sensing_range(self) -> str:
         """The Full Scale RGB Range has two different selectable ranges at bit 3.
          The range determines the ADC resolution (12 bits and 16 bits).
          Each range has a maximum allowable lux value. Higher range values offer
@@ -250,16 +269,18 @@ class ISL29125:
 
 
         """
+        values = ("LUX_375", "LUX_10K")
 
-        return self._rgb_sensing_range
+        return values[self._rgb_sensing_range]
 
     @sensing_range.setter
     def sensing_range(self, value: int) -> None:
-
+        if value not in sensing_range_values:
+            raise ValueError("Value must be a valid sensing range setting")
         self._rgb_sensing_range = value
 
     @property
-    def adc_resolution(self) -> int:
+    def adc_resolution(self) -> str:
         """ADC’s resolution and the number of clock cycles per conversion is
         determined by this bit. Changing the resolution of the ADC, changes the
         number of clock cycles of the ADC which in turn changes the integration time.
@@ -289,12 +310,13 @@ class ISL29125:
 
 
         """
-
-        return self._adc_resolution
+        values = ("RES_12BITS", "RES_16BITS")
+        return values[self._adc_resolution]
 
     @adc_resolution.setter
     def adc_resolution(self, value: int) -> None:
-
+        if value not in (0, 1):
+            raise ValueError("Value must be a valid adc resolution setting")
         self._adc_resolution = value
 
     @property
@@ -330,7 +352,8 @@ class ISL29125:
 
     @ir_compensation.setter
     def ir_compensation(self, value: int) -> None:
-
+        if value not in (0, 1):
+            raise ValueError("Value must be a valid ir compensation setting")
         self._ir_compensation = value
 
     @property
@@ -366,11 +389,12 @@ class ISL29125:
 
     @ir_compensation_value.setter
     def ir_compensation_value(self, value: int) -> None:
-
+        if value not in (1, 2, 4, 8, 16, 32):
+            raise ValueError("Value must be a valid ir compensation setting")
         self._ir_compensation_value = value
 
     @property
-    def interrupt_threshold(self) -> int:
+    def interrupt_threshold(self) -> str:
         """The interrupt_threshold is the status bits for light intensity detection.
         The property:`interrupt_triggered` is set to logic HIGH when the light intensity
         crosses the interrupt thresholds window (register address 0x04 - 0x07)
@@ -400,11 +424,13 @@ class ISL29125:
 
 
         """
-
-        return self._interrupt_threshold_status
+        values = ("No Interrupt", "Green Interrupt", "Red Interrupt", "Blue Interrupt")
+        return values[self._interrupt_threshold_status]
 
     @interrupt_threshold.setter
     def interrupt_threshold(self, value) -> None:
+        if value not in interrupt_values:
+            raise ValueError("Value must be a valid interrupt threshold Value")
         self._interrupt_threshold_status = value
 
     @property
@@ -418,25 +444,23 @@ class ISL29125:
 
         """
 
-        return self._high_threshold_MSB * 256 + self._high_threshold_LSB
+        return self._high_threshold
 
     @high_threshold.setter
     def high_threshold(self, value: int) -> None:
-        self._high_threshold_LSB = value & 0xFF
-        self._high_threshold_MSB = value >> 8
+        self._high_threshold = value
 
     @property
     def low_threshold(self) -> int:
-        return self._low_threshold_MSB * 256 + self._low_threshold_LSB
+        return self._low_threshold
 
     @low_threshold.setter
     def low_threshold(self, value: int) -> None:
-        self._low_threshold_LSB = value & 0xFF
-        self._low_threshold_MSB = value >> 8
+        self._low_threshold = value
 
     @property
     def interrupt_triggered(self) -> int:
-        """Is set to high when the interrupt thresholds have been triggered (out of
+        """Is set to high when the interrupt threshold have been triggered (out of
         threshold window) and logic low when not yet triggered.
 
         +----------------------------------------+----------------------------------+
@@ -500,12 +524,14 @@ class ISL29125:
 
 
         """
+        values = ("IC1", "IC2", "IC4", "IC8")
 
-        return self._interrupt_persistent_control
+        return values[self._interrupt_persistent_control]
 
     @persistent_control.setter
     def persistent_control(self, value: int) -> None:
-
+        if value not in persistent_control_values:
+            raise ValueError("Value must be a valid persistent control value")
         self._interrupt_persistent_control = value
 
     def clear_register_flag(self):
