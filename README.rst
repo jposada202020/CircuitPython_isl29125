@@ -93,10 +93,3 @@ Or the following command to update an existing version:
 Documentation
 =============
 API documentation for this library can be found on `Read the Docs <https://circuitpython-isl29125.readthedocs.io/>`_.
-
-Contributing
-============
-
-Contributions are welcome! Please read our `Code of Conduct
-<https://github.com/jposada202020/CircuitPython_isl29125/blob/HEAD/CODE_OF_CONDUCT.md>`_
-before contributing to help this project stay welcoming.
