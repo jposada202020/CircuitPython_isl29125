@@ -82,8 +82,6 @@ IC4 = const(0b10)
 IC8 = const(0b11)
 persistent_control_values = (IC1, IC2, IC4, IC8)
 
-# pylint: disable= invalid-name, too-many-instance-attributes, missing-function-docstring
-
 
 class ISL29125:
     """Driver for the ISL29125 Light Sensor connected over I2C.
@@ -363,12 +361,12 @@ class ISL29125:
 
         with the following values:
 
-        * BIT5: 32
-        * BIT4: 16
-        * BIT3: 8
-        * BIT2: 4
-        * BIT1: 2
-        * BIT0: 1
+        | * BIT5: 32
+        | * BIT4: 16
+        | * BIT3: 8
+        | * BIT2: 4
+        | * BIT1: 2
+        | * BIT0: 1
 
 
         Example
@@ -452,6 +450,13 @@ class ISL29125:
 
     @property
     def low_threshold(self) -> int:
+        """
+        The interrupt threshold level is a 16-bit number (Low Threshold-1 and Low Threshold-2).
+        The lower interrupt threshold registers are used to set the lower trigger point for
+        interrupt generation. If the ALS value crosses below or is equal to the lower
+        threshold, an interrupt is asserted on the interrupt pin (LOW) and the interrupt
+        status bit (HIGH).
+        """
         return self._low_threshold
 
     @low_threshold.setter

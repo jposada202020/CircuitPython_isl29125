@@ -19,16 +19,12 @@ authors = [
 ]
 urls = {Homepage = "https://github.com/jposada202020/CircuitPython_isl29125"}
 keywords = [
-    "adafruit",
     "blinka",
     "circuitpython",
-    "micropython",
     "isl29125",
     "light",
     "lux",
     "sensor",
-    "isl29125",
-    "circuitpython",
     "red",
     "green",
     "blue",
