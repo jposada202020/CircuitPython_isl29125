@@ -19,7 +19,6 @@ authors = [
 ]
 urls = {Homepage = "https://github.com/jposada202020/CircuitPython_isl29125"}
 keywords = [
-    "blinka",
     "circuitpython",
     "isl29125",
     "light",
